@@ -1,3 +1,7 @@
+//TODO : use matric for shifting frequency elegently and not just going from sharp to pastell colors
+//TODO : Control interface to adjust specter
+//TODO : Button to reset the view
+
 // display vars
 var realW = window.innerWidth
 var realH = window.innerHeight - 3
@@ -7,12 +11,15 @@ let mic, recorder,fft
 let shouldUpdateMaxs  = true// in second
 let maxUpdateDelay = 15 * 1000
 let colorShift = 0;
-let colorShiftFreq = 1 * 1000
+
+
+let colorShiftFreq = 1 * 100000000
 let colorShiftDir = 1
 
-let cutoff = [0.1,0.5]
+let cutoff = [0.25,0.6]
 
 let maxs = [0,0,0]
+
 
 function setup() {
     let cnv = createCanvas(realW, realH);
