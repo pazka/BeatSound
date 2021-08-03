@@ -6,7 +6,7 @@
 var realW = window.innerWidth
 var realH = window.innerHeight
 let mic, recorder, fft
-let isDebug = true
+let isDebug = false
 
 //color corrector vars
 let isCalibrating = true// in second
@@ -17,7 +17,7 @@ let colorShift = 0;
 let colorShiftFreq = 1 * 100000000
 let colorShiftDir = 1
 
-let cutoff = [0.25, 0.6]
+let cutoff = [0.20, 0.4]
 let cutOffSliders = []
 
 let maxs = [0, 0, 0]
