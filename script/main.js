@@ -32,7 +32,7 @@ function setupGUI() {
 
     cutOffSliders[0].style('width', realW + 'px')
     cutOffSliders[1].style('width', realW + 'px')
-    
+
     cutOffSliders[0].style('display', 'none')
     cutOffSliders[1].style('display', 'none')
 }
@@ -143,7 +143,7 @@ function updateLastMaxLow() {
         maxs[0] = lowLevel
     }
 
-    if (mins[0] > lowLevel) {
+    if (mins[0] > lowLevel && mins[0] > 0) {
         mins[0] = lowLevel
     }
 }
@@ -155,7 +155,7 @@ function updateLastMaxMid() {
         maxs[1] = micMid
     }
 
-    if (mins[1] > micMid) {
+    if (mins[1] > micMid && mins[1] > 0) {
         mins[1] = micMid
     }
 }
@@ -167,7 +167,7 @@ function updateLastMaxHigh() {
         maxs[2] = highLevel
     }
 
-    if (mins[2] > highLevel) {
+    if (mins[2] > highLevel && mins[2] > 0) {
         mins[2] = highLevel
     }
 }
@@ -253,7 +253,7 @@ function displayDebugEnergy() {
     push()
     noStroke()
     fill(255, 255, 255, 50)
-    rect(0                  , realH * 0.5, realW * cutoff[0]                , - realH * (0.5 - (soundVec[0])))
+    rect(0                  , realH * 0.5, realW * cutoff[0]                , realH * (0.5 - (soundVec[0])))
     rect(realW * (cutoff[0]), realH * 0.5, realW * (cutoff[1] - cutoff[0])  , realH * (0.5 - (soundVec[1])))
     rect(realW * (cutoff[1]), realH * 0.5, realW * (1 - cutoff[1])          , realH * (0.5 - (soundVec[2])))
     pop()
