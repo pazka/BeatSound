@@ -28,9 +28,13 @@ let soundVec = [0, 0, 0]
 function setupGUI() {
     cutOffSliders = [createSlider(0, 1000, cutoff[0] * 1000), createSlider(0, 1000, cutoff[1] * 1000)]
     cutOffSliders[0].position(0, realH - 100)
-    cutOffSliders[0].style('width', realW + 'px')
     cutOffSliders[1].position(0, realH - 50)
+
+    cutOffSliders[0].style('width', realW + 'px')
     cutOffSliders[1].style('width', realW + 'px')
+    
+    cutOffSliders[0].style('display', 'none')
+    cutOffSliders[1].style('display', 'none')
 }
 
 function setup() {
