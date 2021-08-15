@@ -244,14 +244,14 @@ function displayDebugSpectrum() {
 
 function displayBasicDebugText() {
     push()
-    stroke(0)
-    strokeWeight(2);
-    fill(255)
+    stroke(soundVec.map(l =>( 1-l) * 255))
+    strokeWeight(1)
+    noFill()
     
     text("Press 'D' for debug GUI", 50, 10, 200)
+
     noStroke()
-    fill(soundVec.map(l => 0-l))
-    text("Press 'D' for debug GUI", 50, 10, 200)
+    fill(soundVec.map(l =>( 1-l) * 255))
     text("Inertia High = " + String(Math.round(levelInertias[2][0] - levelInertias[2][levelInertias.length-1])).padEnd(6,"0"),450,150)
     text("Inertia Mid =  " + String(Math.round(levelInertias[1][0] - levelInertias[1][levelInertias.length-1])).padEnd(6,"0"),450,160)
     text("Inertia Low =  " + String(Math.round(levelInertias[0][0] - levelInertias[0][levelInertias.length-1])).padEnd(6,"0"),450,170)
