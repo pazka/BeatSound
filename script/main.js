@@ -13,7 +13,6 @@ let isCalibrating = true// in second
 let maxUpdateDelay = 15 * 1000
 let colorShift = 0;
 
-
 let colorShiftFreq = 1 * 100000000
 let colorShiftDir = 1
 
@@ -23,7 +22,13 @@ let cutOffSliders = []
 let maxs = [0, 0, 0]
 let mins = [Infinity, Infinity, Infinity]
 let calibrationTimeout
+
+let levelInertiaLength = 10
+let levelInertiaAmount = 0.9
+let levelInertias = new Array(3).fill(0).map(x => new Array(levelInertiaLength).fill(0))
+
 let soundVec = [0, 0, 0]
+levels = [0,0,0]
 
 function setupGUI() {
     cutOffSliders = [createSlider(0, 1000, cutoff[0] * 1000), createSlider(0, 1000, cutoff[1] * 1000)]
@@ -55,14 +60,15 @@ function setup() {
         fft.setInput(mic);
     });
 
-    resetCalibrationTimeout()
-
+    resetMaxs()
     setInterval(shiftColor, colorShiftFreq)
 
     setupGUI()
 }
 
 function draw() {
+    updateLevels()
+
     if (cutoff[0] !== cutOffSliders[0].value() / 1000 || cutoff[1] !== cutOffSliders[1].value() / 1000) {
         cutoff[0] = cutOffSliders[0].value() / 1000
         cutoff[1] = cutOffSliders[1].value() / 1000
@@ -73,9 +79,9 @@ function draw() {
         updateAllMaxs()
 
     soundVec = [
-        getLow() / (maxs[0] - mins[0]),
-        getMid() / (maxs[1] - mins[1]),
-        getHigh() / (maxs[2] - mins[2])
+        readLow() / (maxs[0] - mins[0]),
+        readMid() / (maxs[1] - mins[1]),
+        readHigh() / (maxs[2] - mins[2])
     ]
     colorVec = soundVec.map((x, i) => getShiftedColor(x * 255, i))
 
@@ -124,65 +130,72 @@ function resetCalibrationTimeout() {
 
 function resetMaxs() {
     maxs = [0, 0, 0]
-    mins = [0, 0, 0]
+    mins = [Infinity, Infinity, Infinity]
 
     resetCalibrationTimeout()
 }
 
 function updateAllMaxs() {
-    updateLastMaxLow()
-    updateLastMaxMid()
-    updateLastMaxHigh()
+    let accLevels = [readLow(), readMid(), readHigh()]
 
+    accLevels.forEach((accLevel, i) => {
+        if (maxs[i] < accLevel) {
+            maxs[i] = accLevel
+        }
+
+        if (mins[i] > accLevel && accLevel > 0) {
+            mins[i] = accLevel
+        }
+    })
 }
 
-function updateLastMaxLow() {
-    let lowLevel = getLow()
+function applyInertia(spec,level){
+    levelInertias[spec].shift()
+    levelInertias[spec].push(level)
 
-    if (maxs[0] < lowLevel) {
-        maxs[0] = lowLevel
+    if(isCalibrating){
+        levelInertias[spec].map(l => (mins[spec] + maxs[spec])/2)
+        return level
     }
 
-    if (mins[0] > lowLevel && mins[0] > 0) {
-        mins[0] = lowLevel
-    }
-}
-
-function updateLastMaxMid() {
-    let micMid = getMid();
-
-    if (maxs[1] < micMid) {
-        maxs[1] = micMid
-    }
-
-    if (mins[1] > micMid && mins[1] > 0) {
-        mins[1] = micMid
-    }
-}
-
-function updateLastMaxHigh() {
-    let highLevel = getHigh()
-
-    if (maxs[2] < highLevel) {
-        maxs[2] = highLevel
+    for (let i = 1; i < levelInertias[spec].length; i++) {
+        if(levelInertias[spec][i-1] == 0){
+            levelInertias[spec][i-1] = levelInertias[spec][i]
+        }else{
+            levelInertias[spec][i-1] = (
+                (levelInertias[spec][i-1]*(levelInertiaAmount)) + 
+                (levelInertias[spec][i] * (1-levelInertiaAmount))
+                );
+        }
     }
 
-    if (mins[2] > highLevel && mins[2] > 0) {
-        mins[2] = highLevel
-    }
+    return levelInertias[spec][0]
 }
 
-function getHigh() {
-    return getAccSpectrum(cutoff[1], 1) ?? 0
+function updateLevels(){
+    levels = [readLow(),readMid(),readHigh()]
 }
 
-function getLow() {
-    return getAccSpectrum(0, cutoff[0]) ?? 0
+function getHigh(){
+    return levels[2]
+}
+function getMid(){
+    return levels[1]
+}
+function getLow(){
+    return levels[0]
 }
 
-function getMid() {
-    return getAccSpectrum(cutoff[0], cutoff[1]) ?? 0
+function readHigh() {
+    return applyInertia(2,getAccSpectrum(cutoff[1], 1) ?? 0)
 }
+function readMid() {
+    return applyInertia(1,getAccSpectrum(cutoff[0], cutoff[1]) ?? 0)
+}
+function readLow() {
+    return applyInertia(0,getAccSpectrum(0, cutoff[0]) ?? 0)
+}
+
 
 function getSpectrum() {
     return fft.analyze();
@@ -232,13 +245,23 @@ function displayDebugSpectrum() {
 function displayBasicDebugText() {
     push()
     stroke(0)
-    fill([0, 100, 255])
+    strokeWeight(2);
+    fill(255)
+    
     text("Press 'D' for debug GUI", 50, 10, 200)
-    pop()
-    text(maxs, 50, 100)
-    text(soundVec, 50, 150)
-    text(isCalibrating, 50, 200)
+    noStroke()
+    fill(soundVec.map(l => 0-l))
+    text("Press 'D' for debug GUI", 50, 10, 200)
+    text("Inertia High = " + String(Math.round(levelInertias[2][0] - levelInertias[2][levelInertias.length-1])).padEnd(6,"0"),450,150)
+    text("Inertia Mid =  " + String(Math.round(levelInertias[1][0] - levelInertias[1][levelInertias.length-1])).padEnd(6,"0"),450,160)
+    text("Inertia Low =  " + String(Math.round(levelInertias[0][0] - levelInertias[0][levelInertias.length-1])).padEnd(6,"0"),450,170)
+    text("Sound Vector = " + soundVec.map(v => v.toFixed(4)), 50, 150)
+    text("Current Accs = " + [readLow(), readMid(), readHigh()].map(v => Math.round(v)), 50, 160)
+    text("Maxs = " + maxs.map(v => Math.round(v)), 50, 172)
+    text("Mins = " + mins.map(v => Math.round(v)), 50, 185)
+
     text(colorShift, 50, 250)
+    pop()
 }
 
 function displayDebugCutoff() {
@@ -253,9 +276,9 @@ function displayDebugEnergy() {
     push()
     noStroke()
     fill(255, 255, 255, 50)
-    rect(0                  , realH * 0.5, realW * cutoff[0]                , realH * (0.5 - (soundVec[0])))
-    rect(realW * (cutoff[0]), realH * 0.5, realW * (cutoff[1] - cutoff[0])  , realH * (0.5 - (soundVec[1])))
-    rect(realW * (cutoff[1]), realH * 0.5, realW * (1 - cutoff[1])          , realH * (0.5 - (soundVec[2])))
+    rect(0, realH * 0.5, realW * cutoff[0], realH * (0.5 - (soundVec[0])))
+    rect(realW * (cutoff[0]), realH * 0.5, realW * (cutoff[1] - cutoff[0]), realH * (0.5 - (soundVec[1])))
+    rect(realW * (cutoff[1]), realH * 0.5, realW * (1 - cutoff[1]), realH * (0.5 - (soundVec[2])))
     pop()
 }
 
